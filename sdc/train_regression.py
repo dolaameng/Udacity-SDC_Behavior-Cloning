@@ -1,0 +1,98 @@
+import numpy as np
+
+import argparse
+import tensorflow as tf
+import keras.backend as K
+import pandas as pd
+
+from . import model
+from . import config
+from . import process
+from . import data
+
+from .config import xycols, processors
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--train", dest="train", action="store_true")
+parser.add_argument("--restore", dest="restore", action="store_true")
+parser.add_argument("--nb_epoch", dest="nb_epoch", type=int)
+args = parser.parse_args()
+
+nb_epoch = args.nb_epoch
+
+
+dataset = data.DataSet([
+          ("data/t1r1/driving_log.csv", "data/t1r1/IMG")
+        , ("data/t1r2/driving_log.csv", "data/t1r2/IMG/")
+        , ("data/t1r3/driving_log.csv", "data/t1r3/IMG/")
+        , ("data/t1r4/driving_log.csv", "data/t1r4/IMG/")
+        , ("data/t1r5/driving_log.csv", "data/t1r5/IMG/")
+
+        # clean data has too many small steering, which is actually bad
+        #, ("data/t1c1/driving_log.csv", "data/t1c1/IMG/")
+
+        # bridge section is repeated because it is short
+        , ("data/t1b1/driving_log.csv", "data/t1b1/IMG/") 
+
+        # a "little" wiggle helps for VGG model
+        #, ("data/t1w1/driving_log.csv", "data/t1w1/IMG/") 
+
+        # training by reverse driving, to get more right turns
+        , ("data/t1rr1/driving_log.csv", "data/t1rr1/IMG/") 
+]).preprocess()
+
+trainset, others = dataset.split(test_size=20000)
+valset, testset = others.split(test_size=10000)
+
+train_size = trainset.size()
+val_size = valset.size()
+test_size = testset.size()
+
+print("training size %d, validation size %d, test size %d" % (train_size, val_size, test_size))
+
+
+# xycols = ["CenterImage", "SteeringAngle"]
+# processors = {"CenterImage": process.vgg_processor(config.image_size)}
+
+train_generator = trainset.make_batch_generator(batch_size=config.batch_size, 
+						col_grps = xycols,
+						process_fns = processors)
+val_generator = valset.make_batch_generator(batch_size=config.batch_size,
+						col_grps = xycols,
+						process_fns = processors)
+test_generator = testset.make_batch_generator(batch_size=config.batch_size,
+						col_grps = xycols,
+						process_fns = processors)
+
+with tf.Session() as sess:
+	K.set_session(sess)
+	img_steer_model = model.SteerRegressionModel(input_shape=config.image_size, model=config.model_name)
+
+	print("inspect model:")
+	img_steer_model.inspect()
+
+	if args.restore:
+		print("restore model from", config.model_prefix)
+		img_steer_model.restore(config.model_prefix)
+
+	if args.train:
+		img_steer_model.fit_generator(nb_epoch, train_generator, 
+			train_size//config.batch_size*config.batch_size, 
+			val_generator, val_size)
+		print("save model to", config.model_prefix)
+		img_steer_model.save(config.model_prefix)
+	
+	print("evaluate on test data")
+	testset.reset()
+	test_y = testset.log.SteeringAngle
+	test_yhat = img_steer_model.predict_generator(test_generator, test_size)
+	mse = np.mean((test_yhat - test_y) * (test_yhat - test_y))
+	print("test mse:", mse)
+
+	print("save test result for inspection")
+	test_result = pd.DataFrame({"steer": test_y, 
+								"prediction": test_yhat, 
+								"image": testset.log.CenterImage})
+	test_result.to_csv("tmp/test_result.csv", header=True, index=False)

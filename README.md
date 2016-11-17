@@ -1,2 +1,7 @@
-# Udacity-Self-Driving-Car---Behavior-Cloning
-Behavior Cloning Project for Udacity SDC Nanodegree
+# Udacity Self Driving Car Nano Degree - Behavior Cloning Project
+
+## What
+
+## How
+
+## TODO: Add description to this readme
