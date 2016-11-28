@@ -3,7 +3,7 @@ import json
 
 from keras.applications import VGG16
 from keras.layers import AveragePooling2D, Conv2D
-from keras.layers import Input, Flatten, Dense, Lambda
+from keras.layers import Input, Flatten, Dense, Lambda, merge
 from keras.layers import Dropout, BatchNormalization, ELU
 from keras.optimizers import Adam
 from keras.models import Model, Sequential, model_from_json
@@ -12,7 +12,7 @@ from keras import backend as K
 K.set_image_dim_ordering("tf")
 
 class SteerRegressionModel(object):
-	def __init__(self, input_shape, model="vgg16"):
+	def __init__(self, input_shape, model="vgg16_pretrained"):
 		self.input_shape = input_shape
 		self.model = None
 		np.random.seed(1337)
@@ -20,18 +20,16 @@ class SteerRegressionModel(object):
 		self.build()
 
 	def build(self):
-		print ("building %s model" % self.model_name)
-		if self.model_name == "vgg16":
-			self._build_vgg16_based()
-		elif self.model_name == "nvidia":
-			self._build_nvidia_cnn()
-		elif self.model_name == "comma.ai":
-			self._build_comma_ai()
-		else:
+		try:
+			build_fn = getattr(self, "_build_"+self.model_name)
+		except:
 			raise ValueError("model %s not implemented" % self.model_name)
+
+		print ("building %s model" % self.model_name)
+		build_fn()
 		return self
 
-	def _build_nvidia_cnn(self):
+	def _build_nvidia(self):
 		inp = Input(shape=self.input_shape)
 
 		x = Conv2D(24, 5, 5, border_mode="valid", subsample=(2, 2), activation="elu")(inp)
@@ -54,7 +52,9 @@ class SteerRegressionModel(object):
 		self.model = Model(input=inp, output=x)
 		return self
 	
-	def _build_vgg16_based(self):
+	def _build_vgg16_pretrained(self):
+		"""Batch normalization helps speed up convergence
+		"""
 		input_image = Input(shape = self.input_shape)
 
 		
@@ -63,12 +63,51 @@ class SteerRegressionModel(object):
 		for layer in base_model.layers:
 		    layer.trainable = False
 
-		# get rid of block 5 for simplicity
 		x = base_model.get_layer("block5_conv3").output
-		#x = Dropout(0.5)(x)
-		x = AveragePooling2D((2, 2))(x)
+		#x = AveragePooling2D((2, 2))(x)
+		x = BatchNormalization()(x)
 		x = Dropout(0.5)(x)
 		x = Flatten()(x)
+		x = Dense(4096, activation="elu")(x)
+		# x = BatchNormalization()(x)
+		x = Dropout(0.5)(x)
+		x = Dense(2048, activation="elu")(x)
+		# x = BatchNormalization()(x)
+		x = Dense(2048, activation="elu")(x)
+		# x = Dropout(0.5)(x)
+		x = Dense(1, activation="linear")(x)
+
+
+		self.model = Model(input=input_image, output=x)
+		return self
+
+	def _build_vgg16_multi_layers(self):
+		"""Use outputs from multiple vgg layers as input to steering modelling
+		Without normalization, the result is not really good
+		"""
+		input_image = Input(shape = self.input_shape)
+
+		
+		base_model = VGG16(input_tensor=input_image, include_top=False)
+		
+		for layer in base_model.layers:
+		    layer.trainable = False
+
+		# x1 = base_model.get_layer("block1_conv2").output
+		# x2 = base_model.get_layer("block2_conv2").output
+		x3 = base_model.get_layer("block5_conv1").output
+		x3 = AveragePooling2D((2, 2))(x3)
+		x3 = Flatten()(x3)
+		x4 = base_model.get_layer("block5_conv2").output
+		x4 = AveragePooling2D((2, 2))(x4)
+		x4 = Flatten()(x4)
+		x5 = base_model.get_layer("block5_conv3").output
+		x5 = AveragePooling2D((2, 2))(x5)
+		x5 = Flatten()(x5)
+
+		x = merge([x3, x4, x5], mode="concat", concat_axis=1)
+
+		x = Dropout(0.5)(x)
 		x = Dense(4096, activation="elu")(x)
 		x = Dropout(0.5)(x) # tend to predict all zeros!
 		x = Dense(2048, activation="elu")(x)
@@ -102,7 +141,14 @@ class SteerRegressionModel(object):
 
 	def inspect(self):
 		for layer in self.model.layers:
-			print(layer.name, layer.input_shape, layer.output_shape, layer.trainable)
+			trainable = None
+			# merge layer of keras doesn't have trainable?
+			try: 
+				trainable = layer.trainable
+			except:
+				pass
+			print(layer.name, layer.input_shape, layer.output_shape, trainable)
+		# print(self.model.summary())
 		return self
 
 	def fit_generator(self, nb_epoch,

@@ -92,3 +92,4 @@ ENV/
 data
 models
 tmp
+simulator-linux

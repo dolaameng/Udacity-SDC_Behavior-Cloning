@@ -28,7 +28,17 @@ class DataSet(object):
     def preprocess(self):
         """preprocess dataset"""
         self.remove_noise()
+        # using mirror translation makes training for more epochs possible
+        self.mirror()
         self.shuffle()
+        return self
+
+    def mirror(self):
+        """Mirror the center image and minus the steering"""
+        mirror = self.log.copy()
+        mirror["CenterImage"] = mirror["CenterImage"] + "_mirror"
+        mirror["SteeringAngle"] = - mirror["SteeringAngle"].astype(np.float32)
+        self.log = pd.concat([self.log, mirror], axis=0, ignore_index=True)
         return self
 
     def smooth(self, window):
@@ -43,7 +53,8 @@ class DataSet(object):
 
     def remove_noise(self):
         N = self.log.shape[0]
-        self.log = self.log[self.log.Speed>=20.]
+        # focus on speed >= 20 
+        self.log = self.log[self.log.Speed >= 20.]
         print("%d records have been removed due to speed <= 20" % (N- self.log.shape[0]))
         return self
 

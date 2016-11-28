@@ -23,25 +23,7 @@ args = parser.parse_args()
 nb_epoch = args.nb_epoch
 
 
-dataset = data.DataSet([
-          ("data/t1r1/driving_log.csv", "data/t1r1/IMG")
-        , ("data/t1r2/driving_log.csv", "data/t1r2/IMG/")
-        , ("data/t1r3/driving_log.csv", "data/t1r3/IMG/")
-        , ("data/t1r4/driving_log.csv", "data/t1r4/IMG/")
-        , ("data/t1r5/driving_log.csv", "data/t1r5/IMG/")
-
-        # clean data has too many small steering, which is actually bad
-        #, ("data/t1c1/driving_log.csv", "data/t1c1/IMG/")
-
-        # bridge section is repeated because it is short
-        , ("data/t1b1/driving_log.csv", "data/t1b1/IMG/") 
-
-        # a "little" wiggle helps for VGG model
-        #, ("data/t1w1/driving_log.csv", "data/t1w1/IMG/") 
-
-        # training by reverse driving, to get more right turns
-        , ("data/t1rr1/driving_log.csv", "data/t1rr1/IMG/") 
-]).preprocess()
+dataset = data.DataSet(config.train_data).preprocess()
 
 trainset, others = dataset.split(test_size=20000)
 valset, testset = others.split(test_size=10000)
