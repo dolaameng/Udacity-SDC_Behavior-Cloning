@@ -3,7 +3,7 @@ from . import process
 # original image_size = (160, 320, 3)
 
 ## common settings
-batch_size = 128
+batch_size = 256
 model_prefix = "models/model"
 xycols = ["CenterImage", "SteeringAngle"]
 train_data = [
@@ -15,7 +15,8 @@ train_data = [
         # clean data has too many small steering, which is actually bad
         #, ("data/t1c1/driving_log.csv", "data/t1c1/IMG/")
         # bridge section is repeated because it is short
-        , ("data/t1b1/driving_log.csv", "data/t1b1/IMG/") 
+        , ("data/t1b1/driving_log.csv", "data/t1b1/IMG/")
+        # , ("data/t1b2/driving_log.csv", "data/t1b2/IMG/") 
         # a "little" wiggle helps for VGG model - misbehaviors will be corrected
         , ("data/t1w1/driving_log.csv", "data/t1w1/IMG/") 
         # training by reverse driving, to get more right turns
@@ -25,6 +26,7 @@ train_data = [
         , ("data/t2r1/driving_log.csv", "data/t2r1/IMG/")
         , ("data/t2r2/driving_log.csv", "data/t2r2/IMG/")
         , ("data/t2r3/driving_log.csv", "data/t2r3/IMG/")
+        , ("data/t2r3.1/driving_log.csv", "data/t2r3.1/IMG/")
         , ("data/t2r4/driving_log.csv", "data/t2r4/IMG/")
         , ("data/t2w1/driving_log.csv", "data/t2w1/IMG/")
 ]

@@ -7,6 +7,7 @@ from keras.layers import Input, Flatten, Dense, Lambda, merge
 from keras.layers import Dropout, BatchNormalization, ELU
 from keras.optimizers import Adam
 from keras.models import Model, Sequential, model_from_json
+from keras.regularizers import l2
 from keras import backend as K
 
 K.set_image_dim_ordering("tf")
@@ -60,21 +61,23 @@ class SteerRegressionModel(object):
 		
 		base_model = VGG16(input_tensor=input_image, include_top=False)
 		
-		for layer in base_model.layers:
+		for layer in base_model.layers[:-3]:
 		    layer.trainable = False
 
+		W_regularizer = l2(0.01)
+
 		x = base_model.get_layer("block5_conv3").output
-		#x = AveragePooling2D((2, 2))(x)
+		x = AveragePooling2D((2, 2))(x)
+		x = Dropout(0.5)(x)
 		x = BatchNormalization()(x)
 		x = Dropout(0.5)(x)
 		x = Flatten()(x)
-		x = Dense(4096, activation="elu")(x)
+		x = Dense(4096, activation="elu", W_regularizer=l2(0.01))(x)
 		# x = BatchNormalization()(x)
 		x = Dropout(0.5)(x)
-		x = Dense(2048, activation="elu")(x)
+		x = Dense(2048, activation="elu", W_regularizer=l2(0.01))(x)
 		# x = BatchNormalization()(x)
-		x = Dense(2048, activation="elu")(x)
-		# x = Dropout(0.5)(x)
+		x = Dense(2048, activation="elu", W_regularizer=l2(0.01))(x)
 		x = Dense(1, activation="linear")(x)
 
 
