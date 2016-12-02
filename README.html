@@ -62,7 +62,7 @@
 <li>Use <code>pip -r requirements.txt</code> to install python packages</li>
 <li>Download <a href="https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5831f0f7_simulator-linux/simulator-linux.zip">driving simulators from Udacity</a>
 </li>
-<li>Download the model files from <a href="https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip">https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip</a> and uncompress to create the models sub-folder.</li>
+<li>Download <a href="https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip">zipped model files</a> and unzip it to create the <code>models</code> sub-folder.</li>
 <li>Optionally save your training data in separate folders in <code>data</code> folder if you want to build model on your own data. An example of <code>data</code> folder will be:</li>
 </ul>
 
@@ -270,19 +270,20 @@
 <ul>
 <li>I use the bottleneck features up to <code>block5_conv3</code>, freeze the training of all layers except the last two, namely <code>block5_conv2</code> and <code>block5_conv3</code>. </li>
 <li>An <code>AveragePooling2D</code> layer is used after <code>block5_conv3</code>, to further downscale the images. </li>
-<li>A <code>BatchNormalization</code> layer is used to speed up the training convergence - because the pretrained VGG16 model has a input value range roughly from -128 to 128.</li>
-<li>droputout</li>
+<li>A <code>BatchNormalization</code> layer is used to speed up the training convergence - the pretrained VGG16 model has a input value range roughly from -128 to 128, which may make the training of top dense layers a little slower.</li>
+<li>Two <code>Droputout</code> layers are used before and after the <code>BatchNormalization</code> layer - I am not really sure whether it is equivalent to using a single dropout because it will influence the outputs of BatchNormalization.</li>
+<li>Then a <code>Flatten</code> layer is used, followed by 3 <code>Dense</code> layers, each has output of 4096, 2048, 2048. Each dense layer has a <code>l2</code> regularizer - based on the idea that similar image inputs should generate smooth steering changes, so the model weights should not be too large. The first two dense layers are also followed by dropout layers to further regularize the model.</li>
+<li>I also used the <a href="https://arxiv.org/abs/1511.07289"><code>elu</code></a> for the dense layers for faster training convergence.</li>
+<li>The top layer is output layer with one neuron  and a linear activation.</li>
 </ul>
 
-<p>Discussion </p>
+<p>With the model above, I also found the following processing steps useful in generating good results. </p>
 
 <ul>
-<li>image resizeing</li>
-<li>image preprocessing</li>
-<li>found pretrained good enough for small dataset (e.g., without mirroring)</li>
+<li>Scaling the images to square. The VGG16 model was trained on images of size (224 x 224 x 3), so I found it works better with images of equal width and height. I was progressively downsizing the image sizes until a signifcant performance loss was observed. That gave me an estimate of optimal image size (80 x 80 x 3).</li>
+<li>I was using the standard preprocessing for the pretrained VGG from <code>Keras</code>, including subtraction of means and change of color channels.</li>
+<li>I have experimented with how the pretrained layers should be <em>fine-tunned</em>. I found the bottleneck features without any fine-tunning works well with data of medium size (e.g., before mirroring the images), and bigger dataset provides the luxury of fine-tunning the last two layers <code>block5_conv2</code> and <code>block5_conv3</code>. Making more layers trainable doesn't gain much performance given the current dataset.</li>
 </ul>
-
-<p>batch normalization, not sure of pooling...</p>
 
 <h3>
 <a id="user-content-training" class="anchor" href="#training" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Training</h3>
