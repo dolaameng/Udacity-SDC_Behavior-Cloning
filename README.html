@@ -62,6 +62,7 @@
 <li>Use <code>pip -r requirements.txt</code> to install python packages</li>
 <li>Download <a href="https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5831f0f7_simulator-linux/simulator-linux.zip">driving simulators from Udacity</a>
 </li>
+<li>Download the model files from <a href="https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip">https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip</a> and uncompress to create the models sub-folder.</li>
 <li>Optionally save your training data in separate folders in <code>data</code> folder if you want to build model on your own data. An example of <code>data</code> folder will be:</li>
 </ul>
 
@@ -267,7 +268,18 @@
 <p>The final model I used in the submission is a <a href="https://github.com/fchollet/keras/blob/master/keras/applications/vgg16.py">pretrained VGG16 model</a> with the following modifications:</p>
 
 <ul>
-<li>I use the bottleneck features up to <code>block5_conv3</code>, freeze the training of all layers except the last two, namely block5_conv2 and block5_conv3. </li>
+<li>I use the bottleneck features up to <code>block5_conv3</code>, freeze the training of all layers except the last two, namely <code>block5_conv2</code> and <code>block5_conv3</code>. </li>
+<li>An <code>AveragePooling2D</code> layer is used after <code>block5_conv3</code>, to further downscale the images. </li>
+<li>A <code>BatchNormalization</code> layer is used to speed up the training convergence - because the pretrained VGG16 model has a input value range roughly from -128 to 128.</li>
+<li>droputout</li>
+</ul>
+
+<p>Discussion </p>
+
+<ul>
+<li>image resizeing</li>
+<li>image preprocessing</li>
+<li>found pretrained good enough for small dataset (e.g., without mirroring)</li>
 </ul>
 
 <p>batch normalization, not sure of pooling...</p>
