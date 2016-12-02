@@ -1,0 +1,12 @@
+eventlet==0.19.0
+Flask==0.11.1
+matplotlib==1.5.1
+numpy==1.11.1
+pandas==0.18.0
+Pillow==3.4.2
+cv2==1.0
+keras==1.1.2
+pytest==3.0.4
+scikit_learn==0.18.1
+gevent_socketio==0.3.6
+tensorflow==0.12.0rc0

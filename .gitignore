@@ -91,5 +91,6 @@ ENV/
 
 data
 models
+saved_models
 tmp
 simulator-linux
