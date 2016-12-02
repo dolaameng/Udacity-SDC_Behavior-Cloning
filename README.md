@@ -5,7 +5,7 @@
 ### Prerequisites
 - Use `pip -r requirements.txt` to install python packages
 - Download [driving simulators from Udacity](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5831f0f7_simulator-linux/simulator-linux.zip)
-- Download the model files `model`
+- Download the model files from [here](https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip) and uncompress to create the models sub-folder.
 - Optionally save your training data in separate folders in `data` folder if you want to build model on your own data. An example of `data` folder will be:
 ```
 data
