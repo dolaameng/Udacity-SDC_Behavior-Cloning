@@ -113,7 +113,7 @@ After some explorations, I was finally comfortable with using the VGG16 based mo
 ### Data Generation & Processing
 **One lesson that I have learned in this project is the importance and power of sufficient data in training deep learning models.** I have observed significant performance boosts several times when new data were used. 
 
-The Udacity simulator records user's driving behaviors by saving the images of `left/center/right cameras`, as well as `driving logs` such as `steering angle`, `throttle`, `break` and `speed` as time serieses. The driving is on fixed tracks without any traffic. As a result, there are some challenges in generating the data,
+The Udacity simulator records user's driving behaviors by saving the images of `left/center/right cameras`, as well as `driving logs` such as `steering angle`, `throttle`, `brake` and `speed` as time serieses. The driving is on fixed tracks without any traffic. As a result, there are some challenges in generating the data,
 - In a short time window, the generated images might be visually similar whereas the change of steering are big, e.g. at road turnings. So to drive successfully, the model is forced to learn subtle differences in similar images.
 - On the other hand, the model still needs to learn to generalize by finding common patterns of, e.g., right steerings, from very different images, e.g, scenes at lake side or mountain road. In other words, the "noise" in the raw image representations might be stronger than the "signals" for this learning problem. So I doubt any models that only use raw image representations (e.g., MLP, k-NN) would work.
 - Driving in a traffic free environment is easy to generate data that are too clean to capture the *variances of real driving behaviors*. For example, a model might memorize to go straight on a straight road based on the training data, but fail to drive back when there is a slight drifting in test.
@@ -121,7 +121,7 @@ The Udacity simulator records user's driving behaviors by saving the images of `
 - Similarly, there are rare scenes/locations in simulations, e.g., short bridge crossing. A model might have difficulties of learning from them if there are not enough related data in training. ***In fact, I often used the models' behaviors on the rare scenes as a quick check for model overfitting.*** If the model learns well, it should be able to use the general knowledge for rare scenes, instead of memorizing the scenes themselves.
 - Even it is driving in a simulated platform, sometimes it is hard to get the desired quality. I used to drive with many small steerings at turnings - the generated data prove to be less useful in my experiments. I also need to remove some noise in data, e.g., over-steerings. 
 
-To overcome some of the challenges, I have experimented with several data generating ways, e.g., "course correction" suggested by many researchs, as well as preprocessing of data including mirroring, smoothing, noise-removing that are discussed above. The following is a list of datasets used in the final experiment, with their descriptions. 
+To overcome some of the challenges, I have experimented with several data generating ways, e.g., "course correction" suggested by many researches, as well as preprocessing of data including mirroring, smoothing, noise-removing that are discussed above. The following is a list of datasets used in the final experiment, with their descriptions. 
 - `t1r1, t1r2, t1r3, t1r4, t1r5`: track 1, "proper driving" run1 to run5, 46,230 images in total.
 - `t1b1`: track1, additional driving for rare scene bridge-crossing, 5,589 images - it turns out to be less useful after the model stablizes.
 - `t1w1`: track1, "wiggle driving", 7,495 images. *I didn't strictly follow the "course correction" suggested in the literature, which involves moving the car to a side and only recording the correction part. Instead I was just driving the car in a wiggle way (not realistic in practice though) and recording everything.* My idea is that the model will just learn the correction part and the pre-stage will be "diluted" by enough proper driving because we have a lot of them with car in the center of roads.
@@ -133,20 +133,26 @@ After removing some data and mirroring the steerings, there are 166,656 images i
 
 ### Model Architecture
 The final model I used in the submission is a [pretrained VGG16 model](https://github.com/fchollet/keras/blob/master/keras/applications/vgg16.py) with the following modifications:
-- I use the bottleneck features up to `block5_conv3`, freeze the training of all layers except the last two, namely `block5_conv2` and `block5_conv3`. 
+- I use the bottleneck features up to `block5_conv3`, freezing the training of all layers except the last two, namely `block5_conv2` and `block5_conv3`. 
 - An `AveragePooling2D` layer is used after `block5_conv3`, to further downscale the images. 
-- A `BatchNormalization` layer is used to speed up the training convergence - the pretrained VGG16 model has a input value range roughly from -128 to 128, which may make the training of top dense layers a little slower.
+- A `BatchNormalization` layer is used to speed up the training convergence - the pretrained VGG16 model has an input value range roughly from -128 to 128, which may make the training of top dense layers a little slower with default initialization.
 - Two `Droputout` layers are used before and after the `BatchNormalization` layer - I am not really sure whether it is equivalent to using a single dropout because it will influence the outputs of BatchNormalization.
-- Then a `Flatten` layer is used, followed by 3 `Dense` layers, each has output of 4096, 2048, 2048. Each dense layer has a `l2` regularizer - based on the idea that similar image inputs should generate smooth steering changes, so the model weights should not be too large. The first two dense layers are also followed by dropout layers to further regularize the model.
-- I also used the [`elu`](https://arxiv.org/abs/1511.07289) for the dense layers for faster training convergence.
-- The top layer is output layer with one neuron  and a linear activation.
+- Then a `Flatten` layer is used, followed by 3 `Dense` layers, each has an output size of 4096, 2048, 2048. Each dense layer is trained with a `l2` regularizer - based on the assumption that similar image inputs should generate smooth steering changes, so the model weights should not be too large. The first two dense layers are also followed by dropout layers to further regularize the model.
+- I also used the [`elu`](https://arxiv.org/abs/1511.07289) for the dense layers for faster training convergence based on some literature study.
+- The top output layer is a single neuron with a `linear` activation. I have also tried other activations such as `tanh`, `sigmoidal` and found the `linear` activation works just well in predicting steerings in [-1, 1] range.
 
 With the model above, I also found the following processing steps useful in generating good results. 
-- Scaling the images to square. The VGG16 model was trained on images of size (224 x 224 x 3), so I found it works better with images of equal width and height. I was progressively downsizing the image sizes until a signifcant performance loss was observed. That gave me an estimate of optimal image size (80 x 80 x 3).
-- I was using the standard preprocessing for the pretrained VGG from `Keras`, including subtraction of means and change of color channels.
-- I have experimented with how the pretrained layers should be *fine-tunned*. I found the bottleneck features without any fine-tunning works well with data of medium size (e.g., before mirroring the images), and bigger dataset provides the luxury of fine-tunning the last two layers `block5_conv2` and `block5_conv3`. Making more layers trainable doesn't gain much performance given the current dataset.
+- Scaling the images to squares. The VGG16 model was trained on images size (224 x 224 x 3), so I found it works better with images of equal width and height. I was gradually downsizing the image sizes until a signifcant performance loss was observed. That gave me an estimate of optimal image size (80 x 80 x 3) for model input.
+- I was using the standard preprocessing for the pretrained VGG from `Keras`, including subtraction of means in BGR channels.
+- I have experimented with how the pretrained layers of VGG16 should be *fine-tunned*. I found that the bottleneck features without any fine-tunning works well with data of medium size (e.g., before mirroring the images and doubling the size), and bigger dataset provides the luxury of fine-tunning the last two layers `block5_conv2` and `block5_conv3`. Making more layers trainable doesn't gain much more performances given the current dataset.
 
 ### Training
+The model was trained on a GPU GTX 980M for 6 epochs within an hour. Both the training and validation loss were still decreasing at the last epoch. However, I chose to stop the training at this stage for two main reasons:
+- The model trained after 6 epochs is already able to self-drive on both tracks in most of my expriements.
+- More training could further improve the "cloning accuracy" of the model of my driving behaviors. However, as mentioned above, this might be another type of "overfitting" for a self-driving model, due to the noise in the training data.
+
+## TODO
+
 image processing
 avoid overfitting - how to tell, curve, rare scenes.
 Parameter tuning
