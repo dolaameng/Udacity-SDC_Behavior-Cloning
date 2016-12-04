@@ -6,7 +6,7 @@
 - Use `pip -r requirements.txt` to install python packages
 - Download [driving simulators from Udacity](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5831f0f7_simulator-linux/simulator-linux.zip)
 - Download [zipped model files](https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip) and unzip it to create the `models` sub-folder.
-- Optionally save your training data in separate folders in `data` folder if you want to build model on your own data. An example of `data` folder will be:
+- Optionally create a subfolder `data` and save your training data in it, if you want to build a model on your own data. An example of the `data` folder structure is:
 ```
 data
 ├── headers.csv
@@ -169,13 +169,13 @@ Here are some videos for running my SDC model in the simulator.
 ### First finish of track 1
 [![First finish of track 1](https://img.youtube.com/vi/_VyUSNcQ0UE/0.jpg)](https://www.youtube.com/watch?v=_VyUSNcQ0UE)
 
-### First finish of both tracks
+### Finish of both tracks
 [![First finish of both tracks](https://img.youtube.com/vi/CU5zCB63rvY/0.jpg)](https://www.youtube.com/watch?v=CU5zCB63rvY)
 
 ### Model visualization
 I am also interested in understanding how the trained model actually works. One way is to visualize the regions of images that trigger high activations in certain convolution layers, e.g., `block5_conv3`. For example, [this paper](https://arxiv.org/abs/1505.04366) discusses how to use `deconvolution` layers to reverse-map a single classification output to the original image space, and thus get a semantic segmentation. 
 
-I am not using `deconvolution` layers but instead a cheaper `image resize` operation to approximate the effect. It is similar to `unpolling` but much cheaper to implement. This is only possible because the layer I choose still has enough details to restore in the original image space. The following shows what a SDC model "sees" at left/right turnings. Intuitively the brighter the regions, the more important they are to the model decision. 
+I am not using `deconvolution` layers but instead a cheaper `image resize` operation to approximate the effect. It is similar to `unpooling` but much cheaper to implement. This is only possible because the layer I choose still has enough details to restore in the original image space. The following shows what a SDC model "sees" at left/right turnings. Intuitively the brighter the regions, the more important they are to the model decision. 
 
 ### What a SDC model sees at left turning
 ![SDCSeesLeftTurn](SDCSeesLeftTurn.png)

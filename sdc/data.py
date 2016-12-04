@@ -1,3 +1,7 @@
+"""
+This implements a DataSet class that provides a customized batch generator to model.
+"""
+
 import copy
 from os import path
 from functools import partial

@@ -63,7 +63,7 @@
 <li>Download <a href="https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5831f0f7_simulator-linux/simulator-linux.zip">driving simulators from Udacity</a>
 </li>
 <li>Download <a href="https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip">zipped model files</a> and unzip it to create the <code>models</code> sub-folder.</li>
-<li>Optionally save your training data in separate folders in <code>data</code> folder if you want to build model on your own data. An example of <code>data</code> folder will be:</li>
+<li>Optionally create a subfolder <code>data</code> and save your training data in it, if you want to build a model on your own data. An example of the <code>data</code> folder structure is:</li>
 </ul>
 
 <pre><code>data
@@ -328,7 +328,7 @@
 <p><a href="https://www.youtube.com/watch?v=_VyUSNcQ0UE"><img src="https://camo.githubusercontent.com/762639e4920c8077d7af3bda2d5c40ad48f6ca81/68747470733a2f2f696d672e796f75747562652e636f6d2f76692f5f567955534e63513055452f302e6a7067" alt="First finish of track 1" data-canonical-src="https://img.youtube.com/vi/_VyUSNcQ0UE/0.jpg" style="max-width:100%;"></a></p>
 
 <h3>
-<a id="user-content-first-finish-of-both-tracks" class="anchor" href="#first-finish-of-both-tracks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>First finish of both tracks</h3>
+<a id="user-content-finish-of-both-tracks" class="anchor" href="#finish-of-both-tracks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Finish of both tracks</h3>
 
 <p><a href="https://www.youtube.com/watch?v=CU5zCB63rvY"><img src="https://camo.githubusercontent.com/65c194d7ccfa762d1b2aa72c0fb93e78b1f9d301/68747470733a2f2f696d672e796f75747562652e636f6d2f76692f4355357a434236337276592f302e6a7067" alt="First finish of both tracks" data-canonical-src="https://img.youtube.com/vi/CU5zCB63rvY/0.jpg" style="max-width:100%;"></a></p>
 
@@ -337,7 +337,7 @@
 
 <p>I am also interested in understanding how the trained model actually works. One way is to visualize the regions of images that trigger high activations in certain convolution layers, e.g., <code>block5_conv3</code>. For example, <a href="https://arxiv.org/abs/1505.04366">this paper</a> discusses how to use <code>deconvolution</code> layers to reverse-map a single classification output to the original image space, and thus get a semantic segmentation. </p>
 
-<p>I am not using <code>deconvolution</code> layers but instead a cheaper <code>image resize</code> operation to approximate the effect. It is similar to <code>unpolling</code> but much cheaper to implement. This is only possible because the layer I choose still has enough details to restore in the original image space. The following shows what a SDC model "sees" at left/right turnings. Intuitively the brighter the regions, the more important they are to the model decision. </p>
+<p>I am not using <code>deconvolution</code> layers but instead a cheaper <code>image resize</code> operation to approximate the effect. It is similar to <code>unpooling</code> but much cheaper to implement. This is only possible because the layer I choose still has enough details to restore in the original image space. The following shows what a SDC model "sees" at left/right turnings. Intuitively the brighter the regions, the more important they are to the model decision. </p>
 
 <h3>
 <a id="user-content-what-a-sdc-model-sees-at-left-turning" class="anchor" href="#what-a-sdc-model-sees-at-left-turning" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What a SDC model sees at left turning</h3>

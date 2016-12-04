@@ -1,6 +1,13 @@
+"""
+Configuration of preprocessing, SDC model and training process, e.g.,
+
+- `train_data` to specify multiple training folders
+- `model_prefix` to specify where the trained model to be saved
+- turn on one model implementation by comment on its configuration part and comment off others - yeah, not ugly, but convinient for exploration
+"""
+
 from . import process
 
-# original image_size = (160, 320, 3)
 
 ## common settings
 batch_size = 256
@@ -40,7 +47,7 @@ train_data = [
 
 
 # vgg 16 setting
-# 1. looks like a square size e.g. (80, 80) is consistently better than maintaining shapes (80, 160)
+# 1. looks like a square size e.g. (80, 80) is consistently better than (80, 160)
 model_name = "vgg16_pretrained"
 image_size = (80, 80, 3)
 processors = {"CenterImage": process.vgg_processor(image_size)}

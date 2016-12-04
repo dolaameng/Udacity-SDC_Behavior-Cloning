@@ -1,3 +1,14 @@
+"""This implements several image processing methods for different models.
+The common interface to the methods:
+- `image_size` parameter specifies the target shape of outputs
+- each processor takes an `img_io` (a image file path or BytesIO str) as input
+and generates the processed image as numpy.array.
+- the `img_io` param might have additional instructions on how to convert the image, e.g., 
+a suffix "_mirror" in image file name indicates the image should be mirrored 
+horizontally.
+"""
+
+
 import cv2
 import numpy as np
 
@@ -6,6 +17,9 @@ from keras.applications import imagenet_utils
 
 
 def yuv_normalizer(image_size):
+	"""Load image, reshape to image_size, 
+	convert to YUV channel, and normalize pixels to [0, 1]
+	"""
 	h, w, nch = image_size
 	def fn(img_io):
 		"""img_io: either file name or BytesIO"""
@@ -28,6 +42,9 @@ def yuv_normalizer(image_size):
 	return fn
 
 def vgg_processor(image_size):
+	"""Load image, reshape to image_size,
+	convert to BGR channel and normalize pixels by subtracting predefined means.
+	"""
 	h, w, nch = image_size
 	def fn(img_io):
 		"""img_io: either file name or BytesIO"""
@@ -49,6 +66,9 @@ def vgg_processor(image_size):
 	return fn
 
 def rgb_processor(image_size):
+	"""Load image, reshape to image_size,
+	without any further preprocessing to the images.
+	"""
 	h, w, nch = image_size
 	def fn(img_io):
 		"""img_io: either file name or BytesIO"""
@@ -65,6 +85,3 @@ def rgb_processor(image_size):
 			img_arr = img_arr[:, ::-1, :]
 		return img_arr
 	return fn
-
-# process_single_image = yuv_normalizer(config.image_size)
-# process_batch_images = lambda img_ios: np.stack(map(process_single_image, img_ios), axis=0)

@@ -1,3 +1,7 @@
+"""
+This is the original drive.py script from Udacity with modifications to load the customized SDC model
+"""
+
 import argparse
 import base64
 import json
@@ -28,6 +32,7 @@ app = Flask(__name__)
 
 prev_image_array = None
 
+# load the SDC model and its associated image processing steps
 model = model.SteerRegressionModel(input_shape=config.image_size, model=config.model_name)
 model.restore(config.model_prefix)
 
@@ -43,13 +48,14 @@ def telemetry(sid, data):
     speed = data["speed"]
     # The current image from the center camera of the car
     img_str = data["image"]
-    #open("test.jpg", "wb").write(BytesIO(base64.b64decode(img_str)).read())
+    # read image
     img_bytes = BytesIO(base64.b64decode(img_str))
     # process image
     img = process_image(img_bytes)
+    # make prediction on steering
     steering_angle = model.predict_single(img)
-    # The driving model currently just outputs a constant throttle. Feel free to edit this.
-    throttle = .5#0.25
+    # use a constant throttle
+    throttle = .5
     print(steering_angle, throttle)
     send_control(steering_angle, throttle)
 
@@ -68,16 +74,6 @@ def send_control(steering_angle, throttle):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(description='Remote Driving')
-    # parser.add_argument('model', type=str,
-    # help='Path to model definition json. Model weights should be on the same path.')
-    # args = parser.parse_args()
-    # with open(args.model, 'r') as jfile:
-    #     model = model_from_json(json.load(jfile))
-
-    # model.compile("adam", "mse")
-    # weights_file = args.model.replace('json', 'h5')
-    # model.load_weights(weights_file)
 
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)

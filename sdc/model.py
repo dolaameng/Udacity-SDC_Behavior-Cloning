@@ -1,3 +1,12 @@
+"""
+This implements the SDC model, with a convenient interfaces for testing and driving scripts.
+It delegates the training and prediction to the Keras model underneath.
+
+There are different implementations for the underneath model, choose the one to explore in
+`config.py`
+"""
+
+
 import numpy as np
 import json
 
@@ -10,10 +19,15 @@ from keras.models import Model, Sequential, model_from_json
 from keras.regularizers import l2
 from keras import backend as K
 
+# fix the image ordering for tensorflow
 K.set_image_dim_ordering("tf")
 
 class SteerRegressionModel(object):
 	def __init__(self, input_shape, model="vgg16_pretrained"):
+		"""
+		input_shape: it is the image shape, e.g., (80, 80, 3) for single image regression.
+		model: name of implemented models, {"nvidia", "vgg16_pretrained", "vgg16_multi_layers", "comma_ai"}
+		"""
 		self.input_shape = input_shape
 		self.model = None
 		np.random.seed(1337)
@@ -21,6 +35,8 @@ class SteerRegressionModel(object):
 		self.build()
 
 	def build(self):
+		"""build the architecture of underlying model
+		"""
 		try:
 			build_fn = getattr(self, "_build_"+self.model_name)
 		except:
@@ -31,6 +47,8 @@ class SteerRegressionModel(object):
 		return self
 
 	def _build_nvidia(self):
+		"""Model based on Nvidia paper https://arxiv.org/pdf/1604.07316v1.pdf
+		"""
 		inp = Input(shape=self.input_shape)
 
 		x = Conv2D(24, 5, 5, border_mode="valid", subsample=(2, 2), activation="elu")(inp)
@@ -54,11 +72,10 @@ class SteerRegressionModel(object):
 		return self
 	
 	def _build_vgg16_pretrained(self):
-		"""Batch normalization helps speed up convergence
+		"""Pretrained VGG16 model with fine-tunable last two layers
 		"""
 		input_image = Input(shape = self.input_shape)
 
-		
 		base_model = VGG16(input_tensor=input_image, include_top=False)
 		
 		for layer in base_model.layers[:-3]:
@@ -73,10 +90,8 @@ class SteerRegressionModel(object):
 		x = Dropout(0.5)(x)
 		x = Flatten()(x)
 		x = Dense(4096, activation="elu", W_regularizer=l2(0.01))(x)
-		# x = BatchNormalization()(x)
 		x = Dropout(0.5)(x)
 		x = Dense(2048, activation="elu", W_regularizer=l2(0.01))(x)
-		# x = BatchNormalization()(x)
 		x = Dense(2048, activation="elu", W_regularizer=l2(0.01))(x)
 		x = Dense(1, activation="linear")(x)
 
@@ -96,8 +111,6 @@ class SteerRegressionModel(object):
 		for layer in base_model.layers:
 		    layer.trainable = False
 
-		# x1 = base_model.get_layer("block1_conv2").output
-		# x2 = base_model.get_layer("block2_conv2").output
 		x3 = base_model.get_layer("block5_conv1").output
 		x3 = AveragePooling2D((2, 2))(x3)
 		x3 = Flatten()(x3)
@@ -122,6 +135,8 @@ class SteerRegressionModel(object):
 		return self
 
 	def _build_comma_ai(self):
+		""" Example model from https://github.com/commaai/research
+		"""
 		model = Sequential()
 		model.add(Lambda(lambda x: x/127.5 - 1.,
 						input_shape=self.input_shape,
@@ -143,6 +158,8 @@ class SteerRegressionModel(object):
 		return self
 
 	def inspect(self):
+		"""Inspect the underlying model by layer name and parameters
+		"""
 		for layer in self.model.layers:
 			trainable = None
 			# merge layer of keras doesn't have trainable?
@@ -158,6 +175,16 @@ class SteerRegressionModel(object):
 				train_generator, train_size,
 				val_generator, val_size, 
 				loss_fn=None, optimizer=None):
+		"""train the model by feeding a train and valiation batch_generator.
+		Params:
+			- nb_epoch: # of training epoch
+			- train_generator: data generator for training
+			- train_size: # of training examples in the train_generator
+			- val_generator: data generator for validation
+			- val_size: # of examples in validation set
+			- loss_fn: default "mse"
+			- optimizer: default Adam with learning rate 0.001
+		"""
 		self.loss_fn = loss_fn or "mse"
 		optimizer = optimizer or Adam(lr=0.001)
 		self.model.compile(loss=self.loss_fn, optimizer=optimizer)
@@ -169,6 +196,8 @@ class SteerRegressionModel(object):
 		return self
 
 	def predict_generator(self, test_generator, test_size):
+		"""moddel prediction on a batch generator of test dataset
+		"""
 		i = 0
 		yhats = []
 		while i <= test_size:
@@ -184,10 +213,15 @@ class SteerRegressionModel(object):
 		return yhat
 
 	def predict_single(self, x):
+		"""predict the output based on a single input, e.g.,
+		x is a single image, it returns a single steering value.
+		"""
 		y = self.model.predict(np.expand_dims(x, axis=0))[0][0]
 		return y
 
 	def save(self, prefix):
+		"""save model for future inspection and continuous training
+		"""
 		model_file = prefix + ".json"
 		weight_file = prefix + ".h5"
 		json.dump(self.model.to_json(), open(model_file, "w"))
@@ -195,6 +229,8 @@ class SteerRegressionModel(object):
 		return self
 
 	def restore(self, prefix):
+		"""restore a saved model
+		"""
 		model_file = prefix + ".json"
 		weight_file = prefix + ".h5"
 		self.model = model_from_json(json.load(open(model_file)))
