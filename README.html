@@ -56,7 +56,7 @@
 <a id="user-content-1-quick-start" class="anchor" href="#1-quick-start" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1. Quick Start</h2>
 
 <h3>
-<a id="user-content-prerequisites" class="anchor" href="#prerequisites" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Prerequisites</h3>
+<a id="user-content-11-prerequisites" class="anchor" href="#11-prerequisites" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.1 Prerequisites</h3>
 
 <ul>
 <li>Use <code>pip -r requirements.txt</code> to install python packages</li>
@@ -82,7 +82,7 @@
 <p>where <code>t1b1</code>, <code>t1b2</code> are different training sessions from simulator, with generated images in <code>IMG</code> and driving logs in csv.</p>
 
 <h3>
-<a id="user-content-use-a-pretrained-model-to-drive-in-simulator" class="anchor" href="#use-a-pretrained-model-to-drive-in-simulator" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Use a pretrained model to drive in simulator</h3>
+<a id="user-content-12-use-a-pretrained-model-to-drive-in-simulator" class="anchor" href="#12-use-a-pretrained-model-to-drive-in-simulator" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.2 Use a pretrained model to drive in simulator</h3>
 
 <p>To start the self-driving model, run the following command from the root folder, </p>
 
@@ -91,7 +91,7 @@
 <p>Run the Udacity simulator in autonomous mode to start driving. The script will load models saved in <code>models/model.json</code> and <code>models/model.h5</code> by default.</p>
 
 <h3>
-<a id="user-content-train-your-own-model" class="anchor" href="#train-your-own-model" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Train your own model</h3>
+<a id="user-content-13-train-your-own-model" class="anchor" href="#13-train-your-own-model" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.3 Train your own model</h3>
 
 <p>There are two steps to train a model based on your own data, </p>
 
@@ -115,7 +115,7 @@
 <div class="highlight highlight-source-batchfile"><pre>python -m sdc.train_regression --<span class="pl-k">restore</span></pre></div>
 
 <h3>
-<a id="user-content-inspect-training-results" class="anchor" href="#inspect-training-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Inspect Training Results</h3>
+<a id="user-content-14-inspect-training-results" class="anchor" href="#14-inspect-training-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.4 Inspect Training Results</h3>
 
 <p>The training script will split data into <code>training</code>, <code>validation</code> and <code>test</code> sets. The sizes of <code>validation</code> and <code>test</code> are 10K each by default, which can be configured in <code>sdc/train_regression.py</code> script.</p>
 
@@ -158,6 +158,9 @@
 
 <h2>
 <a id="user-content-3-model-building" class="anchor" href="#3-model-building" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3. Model Building</h2>
+
+<h3>
+<a id="user-content-31-approach-outline" class="anchor" href="#31-approach-outline" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3.1 Approach Outline</h3>
 
 <p>I started by looking at some existing works on self driving cars, including,</p>
 
@@ -228,11 +231,11 @@
 <p>After some explorations, I was finally comfortable with using the VGG16 based model, predicting steers as a regression problem. I will explain this setup in details below.</p>
 
 <h3>
-<a id="user-content-data-generation--processing" class="anchor" href="#data-generation--processing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data Generation &amp; Processing</h3>
+<a id="user-content-32-data-generation--processing" class="anchor" href="#32-data-generation--processing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3.2 Data Generation &amp; Processing</h3>
 
 <p><strong>One lesson that I have learned in this project is the importance and power of sufficient data in training deep learning models.</strong> I have observed significant performance boosts several times when new data were used. </p>
 
-<p>The Udacity simulator records user's driving behaviors by saving the images of <code>left/center/right cameras</code>, as well as <code>driving logs</code> such as <code>steering angle</code>, <code>throttle</code>, <code>break</code> and <code>speed</code> as time serieses. The driving is on fixed tracks without any traffic. As a result, there are some challenges in generating the data,</p>
+<p>The Udacity simulator records user's driving behaviors by saving the images of <code>left/center/right cameras</code>, as well as <code>driving logs</code> such as <code>steering angle</code>, <code>throttle</code>, <code>brake</code> and <code>speed</code> as time serieses. The driving is on fixed tracks without any traffic. As a result, there are some challenges in generating the data,</p>
 
 <ul>
 <li>In a short time window, the generated images might be visually similar whereas the change of steering are big, e.g. at road turnings. So to drive successfully, the model is forced to learn subtle differences in similar images.</li>
@@ -243,7 +246,7 @@
 <li>Even it is driving in a simulated platform, sometimes it is hard to get the desired quality. I used to drive with many small steerings at turnings - the generated data prove to be less useful in my experiments. I also need to remove some noise in data, e.g., over-steerings. </li>
 </ul>
 
-<p>To overcome some of the challenges, I have experimented with several data generating ways, e.g., "course correction" suggested by many researchs, as well as preprocessing of data including mirroring, smoothing, noise-removing that are discussed above. The following is a list of datasets used in the final experiment, with their descriptions. </p>
+<p>To overcome some of the challenges, I have experimented with several data generating ways, e.g., "course correction" suggested by many researches, as well as preprocessing of data including mirroring, smoothing, noise-removing that are discussed above. The following is a list of datasets used in the final experiment, with their descriptions. </p>
 
 <ul>
 <li>
@@ -263,51 +266,93 @@
 <p>After removing some data and mirroring the steerings, there are 166,656 images in training set, 10,000 images in each of validation and test sets.</p>
 
 <h3>
-<a id="user-content-model-architecture" class="anchor" href="#model-architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Model Architecture</h3>
+<a id="user-content-33-model-architecture" class="anchor" href="#33-model-architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3.3 Model Architecture</h3>
 
 <p>The final model I used in the submission is a <a href="https://github.com/fchollet/keras/blob/master/keras/applications/vgg16.py">pretrained VGG16 model</a> with the following modifications:</p>
 
 <ul>
-<li>I use the bottleneck features up to <code>block5_conv3</code>, freeze the training of all layers except the last two, namely <code>block5_conv2</code> and <code>block5_conv3</code>. </li>
+<li>I use the bottleneck features up to <code>block5_conv3</code>, freezing the training of all layers except the last two, namely <code>block5_conv2</code> and <code>block5_conv3</code>. </li>
 <li>An <code>AveragePooling2D</code> layer is used after <code>block5_conv3</code>, to further downscale the images. </li>
-<li>A <code>BatchNormalization</code> layer is used to speed up the training convergence - the pretrained VGG16 model has a input value range roughly from -128 to 128, which may make the training of top dense layers a little slower.</li>
+<li>A <code>BatchNormalization</code> layer is used to speed up the training convergence - the pretrained VGG16 model has an input value range roughly from -128 to 128, which may make the training of top dense layers a little slower with default initialization.</li>
 <li>Two <code>Droputout</code> layers are used before and after the <code>BatchNormalization</code> layer - I am not really sure whether it is equivalent to using a single dropout because it will influence the outputs of BatchNormalization.</li>
-<li>Then a <code>Flatten</code> layer is used, followed by 3 <code>Dense</code> layers, each has output of 4096, 2048, 2048. Each dense layer has a <code>l2</code> regularizer - based on the idea that similar image inputs should generate smooth steering changes, so the model weights should not be too large. The first two dense layers are also followed by dropout layers to further regularize the model.</li>
-<li>I also used the <a href="https://arxiv.org/abs/1511.07289"><code>elu</code></a> for the dense layers for faster training convergence.</li>
-<li>The top layer is output layer with one neuron  and a linear activation.</li>
+<li>Then a <code>Flatten</code> layer is used, followed by 3 <code>Dense</code> layers, each has an output size of 4096, 2048, 2048. Each dense layer is trained with a <code>l2</code> regularizer - based on the assumption that similar image inputs should generate smooth steering changes, so the model weights should not be too large. The first two dense layers are also followed by dropout layers to further regularize the model.</li>
+<li>I also used the <a href="https://arxiv.org/abs/1511.07289"><code>elu</code></a> for the dense layers for faster training convergence based on some literature study.</li>
+<li>The top output layer is a single neuron with a <code>linear</code> activation. I have also tried other activations such as <code>tanh</code>, <code>sigmoidal</code> and found the <code>linear</code> activation works just well in predicting steerings in [-1, 1] range.</li>
 </ul>
 
 <p>With the model above, I also found the following processing steps useful in generating good results. </p>
 
 <ul>
-<li>Scaling the images to square. The VGG16 model was trained on images of size (224 x 224 x 3), so I found it works better with images of equal width and height. I was progressively downsizing the image sizes until a signifcant performance loss was observed. That gave me an estimate of optimal image size (80 x 80 x 3).</li>
-<li>I was using the standard preprocessing for the pretrained VGG from <code>Keras</code>, including subtraction of means and change of color channels.</li>
-<li>I have experimented with how the pretrained layers should be <em>fine-tunned</em>. I found the bottleneck features without any fine-tunning works well with data of medium size (e.g., before mirroring the images), and bigger dataset provides the luxury of fine-tunning the last two layers <code>block5_conv2</code> and <code>block5_conv3</code>. Making more layers trainable doesn't gain much performance given the current dataset.</li>
+<li>Scaling the images to squares. The VGG16 model was trained on images size (224 x 224 x 3), so I found it works better with images of equal width and height. I was gradually downsizing the image sizes until a signifcant performance loss was observed. That gave me an estimate of optimal image size (80 x 80 x 3) for model input.</li>
+<li>I was using the standard preprocessing for the pretrained VGG from <code>Keras</code>, including subtraction of means in BGR channels.</li>
+<li>I have experimented with how the pretrained layers of VGG16 should be <em>fine-tunned</em>. I found that the bottleneck features without any fine-tunning works well with data of medium size (e.g., before mirroring the images and doubling the size), and bigger dataset provides the luxury of fine-tunning the last two layers <code>block5_conv2</code> and <code>block5_conv3</code>. Making more layers trainable doesn't gain much more performances given the current dataset.</li>
 </ul>
 
 <h3>
-<a id="user-content-training" class="anchor" href="#training" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Training</h3>
+<a id="user-content-34-training" class="anchor" href="#34-training" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3.4 Training</h3>
 
-<p>image processing
-avoid overfitting - how to tell, curve, rare scenes.
-Parameter tuning
-training curve</p>
+<p>As discussed above, several mechanisms were implemented to <strong><em>avoid overfitting</em></strong>,</p>
+
+<ul>
+<li>Split of dataset into training, validation and test after random shuffling, so that the validation loss can be monitored in the training process. I didn't see many "typical" overfitting in my experiments, i.e., the validation loss starts to increase while training loss keeps decreasing, probably because the size of the dataset is large enough, and the images in different sets are similiar. However, it doesn't mean that the driving model is not "overfit" -  the model can still memorize images and it won't drive very well in scenes that are slightly different from training data. One example is the car self drives to cross a bridge at a slightly different angle, it might fail to come back to the road center. This is because even the training data is large enough overally but some of its rare scenes (e.g., bridge-crossing) might not be representative enough. So the model overfits and fails to generalize the "drivinig knowledge" from scenes to scenes. This type of overfitting is harder to detect by comparing training/loss validation curves.<br>
+</li>
+<li>So besides using a validation set, I have also implemented visual inspection tools (e.g., <code>inspect_training.py</code>) to do quick checks, as well as running the model on the real simulation from Udacity. </li>
+<li>I used both <code>dropout</code> layers and <code>l2 regularization</code> to control the model complexity. The values of parameters such as <code>dropout probability</code> and <code>l2 weight</code> are mostly based on default values and were fine-tuned with validation error.</li>
+<li>I found that <code>l2 regularization</code> tends to work better with the <code>dense layers</code> than using a separate <code>dropout layer</code>. Sometimes using dropout with dense layers will result in predictions of all zeros. I don't really know the exact reasons behinde this, but I suspect it might be caused by the improper initialization of weights or normalization of images, and so dead neurons by <code>relu</code> and a large <code>dropout</code> effectively turned off many activations. </li>
+</ul>
+
+<p>The model was trained on a GPU GTX 980M for 6 epochs within an hour. Both the training and validation loss were still decreasing at the last epoch. However, I chose to stop the training at this stage for two main reasons:</p>
+
+<ul>
+<li>The model trained after 6 epochs is already able to self-drive on both tracks in most of my expriements.</li>
+<li>More training could further improve the "cloning accuracy" of the model of my driving behaviors. However, as mentioned above, this might be another type of "overfitting" for a self-driving model, due to the noise in the training data.</li>
+</ul>
+
+<p>I used Adam optimizer with a learning rate = 0.001. The performance is not very sensitive to the exact value of learning rate in my experiments.</p>
 
 <h3>
-<a id="user-content-driving-in-simulators" class="anchor" href="#driving-in-simulators" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Driving in Simulators</h3>
+<a id="user-content-35-driving-in-simulators" class="anchor" href="#35-driving-in-simulators" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>3.5 Driving in Simulators</h3>
 
-<p>constant speed</p>
+<p>To test the model under the autonomous mode in the simulator, I was using the <code>drive.py</code> script provided by Udacity with some modifications. The script has the access to all the camera images and signals, and the control of <code>steering angle</code> and <code>throttle</code>. You can even choose to cache the inputs from previous timestamps and build a recurrent model like the one by comma.ai research.</p>
+
+<p>I only use the current <code>center image</code> to predict the current <code>steering angle</code> in my experiments. The <code>throttle</code> was set to a fixed value 0.5 for both tracks. </p>
 
 <h2>
-<a id="user-content-4-test-results" class="anchor" href="#4-test-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>4. Test Results</h2>
+<a id="user-content-4-results" class="anchor" href="#4-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>4. Results</h2>
+
+<p>Here are some videos for running my SDC model in the simulator.</p>
 
 <h3>
-<a id="user-content-videos" class="anchor" href="#videos" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Videos</h3>
+<a id="user-content-first-finish-of-track-1" class="anchor" href="#first-finish-of-track-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>First finish of track 1</h3>
+
+<p><a href="https://www.youtube.com/watch?v=_VyUSNcQ0UE"><img src="https://camo.githubusercontent.com/762639e4920c8077d7af3bda2d5c40ad48f6ca81/68747470733a2f2f696d672e796f75747562652e636f6d2f76692f5f567955534e63513055452f302e6a7067" alt="First finish of track 1" data-canonical-src="https://img.youtube.com/vi/_VyUSNcQ0UE/0.jpg" style="max-width:100%;"></a></p>
 
 <h3>
-<a id="user-content-visualization" class="anchor" href="#visualization" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Visualization</h3>
+<a id="user-content-first-finish-of-both-tracks" class="anchor" href="#first-finish-of-both-tracks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>First finish of both tracks</h3>
 
-<p><em>The conversion of this Markdown to HTML is supported by <a href="https://pypi.python.org/pypi/grip">grip</a>, running</em> <code>grip README.md --export README.html</code></p>
+<p><a href="https://www.youtube.com/watch?v=CU5zCB63rvY"><img src="https://camo.githubusercontent.com/65c194d7ccfa762d1b2aa72c0fb93e78b1f9d301/68747470733a2f2f696d672e796f75747562652e636f6d2f76692f4355357a434236337276592f302e6a7067" alt="First finish of both tracks" data-canonical-src="https://img.youtube.com/vi/CU5zCB63rvY/0.jpg" style="max-width:100%;"></a></p>
+
+<h3>
+<a id="user-content-model-visualization" class="anchor" href="#model-visualization" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Model visualization</h3>
+
+<p>I am also interested in understanding how the trained model actually works. One way is to visualize the regions of images that trigger high activations in certain convolution layers, e.g., <code>block5_conv3</code>. For example, <a href="https://arxiv.org/abs/1505.04366">this paper</a> discusses how to use <code>deconvolution</code> layers to reverse-map a single classification output to the original image space, and thus get a semantic segmentation. </p>
+
+<p>I am not using <code>deconvolution</code> layers but instead a cheaper <code>image resize</code> operation to approximate the effect. It is similar to <code>unpolling</code> but much cheaper to implement. This is only possible because the layer I choose still has enough details to restore in the original image space. The following shows what a SDC model "sees" at left/right turnings. Intuitively the brighter the regions, the more important they are to the model decision. </p>
+
+<h3>
+<a id="user-content-what-a-sdc-model-sees-at-left-turning" class="anchor" href="#what-a-sdc-model-sees-at-left-turning" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What a SDC model sees at left turning</h3>
+
+<p><a href="SDCSeesLeftTurn.png" target="_blank"><img src="SDCSeesLeftTurn.png" alt="SDCSeesLeftTurn" style="max-width:100%;"></a></p>
+
+<h2>
+<a id="user-content-what-a-sdc-model-sees-at-right-turning" class="anchor" href="#what-a-sdc-model-sees-at-right-turning" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What a SDC model sees at right turning</h2>
+
+<p><a href="SDCSeesRightTurn.png" target="_blank"><img src="SDCSeesRightTurn.png" alt="SDCSeesRightTurn" style="max-width:100%;"></a></p>
+
+<p>For a verbose explaination, please refer to the notebook <a href="understand_model.ipynb">understand_model.ipynb</a></p>
+
+<p><br><br>
+<em>The conversion of this Markdown to HTML is supported by <a href="https://pypi.python.org/pypi/grip">grip</a>, running</em> <code>grip README.md --export README.html</code></p>
 
               </article>
             </div>

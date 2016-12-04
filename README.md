@@ -2,7 +2,7 @@
 
 ## 1. Quick Start
 
-### Prerequisites
+### 1.1 Prerequisites
 - Use `pip -r requirements.txt` to install python packages
 - Download [driving simulators from Udacity](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/5831f0f7_simulator-linux/simulator-linux.zip)
 - Download [zipped model files](https://github.com/dolaameng/Udacity-SDC_Behavior-Cloning/releases/download/v0.1/models.zip) and unzip it to create the `models` sub-folder.
@@ -22,14 +22,14 @@ data
 ```
 where `t1b1`, `t1b2` are different training sessions from simulator, with generated images in `IMG` and driving logs in csv.
 
-### Use a pretrained model to drive in simulator
+### 1.2 Use a pretrained model to drive in simulator
 To start the self-driving model, run the following command from the root folder, 
 ```cmd
 python -m sdc.drive
 ``` 
 Run the Udacity simulator in autonomous mode to start driving. The script will load models saved in `models/model.json` and `models/model.h5` by default.
 
-### Train your own model
+### 1.3 Train your own model
 There are two steps to train a model based on your own data, 
 - Put data somewhere, e.g., in `data` folder
 - Config the training data in `sdc/config.py` by setting the `train_data` variables (examples are given in the script).
@@ -50,7 +50,7 @@ To load a trained model to evaluate on test data without any training, simply ru
 python -m sdc.train_regression --restore
 ```
 
-### Inspect Training Results
+### 1.4 Inspect Training Results
 The training script will split data into `training`, `validation` and `test` sets. The sizes of `validation` and `test` are 10K each by default, which can be configured in `sdc/train_regression.py` script.
 
 After each training/evaluation run, a test result will be saved in `tmp/test_result.csv`. Use `insepct_training.py` to load and inpsect the result.  You can also run the ipython notebook `understand_model.ipynb` to ***visualize*** the self-driving-model based on test results.
@@ -71,7 +71,7 @@ After each training/evaluation run, a test result will be saved in `tmp/test_res
 - `insepct_training.py` and `understand_model.ipynb`: scripts to inspect and visually understand generated models.
 
 ## 3. Model Building
-
+### 3.1 Approach Outline
 I started by looking at some existing works on self driving cars, including,
 - [Udacity self-driving-car project](https://github.com/udacity/self-driving-car)
 - [DeepDrive](http://deepdrive.io/)
@@ -110,7 +110,7 @@ To compare different pipelines I need some evaluation tools. Besides the simulat
 After some explorations, I was finally comfortable with using the VGG16 based model, predicting steers as a regression problem. I will explain this setup in details below.
 
 
-### Data Generation & Processing
+### 3.2 Data Generation & Processing
 **One lesson that I have learned in this project is the importance and power of sufficient data in training deep learning models.** I have observed significant performance boosts several times when new data were used. 
 
 The Udacity simulator records user's driving behaviors by saving the images of `left/center/right cameras`, as well as `driving logs` such as `steering angle`, `throttle`, `brake` and `speed` as time serieses. The driving is on fixed tracks without any traffic. As a result, there are some challenges in generating the data,
@@ -131,7 +131,7 @@ To overcome some of the challenges, I have experimented with several data genera
 
 After removing some data and mirroring the steerings, there are 166,656 images in training set, 10,000 images in each of validation and test sets.
 
-### Model Architecture
+### 3.3 Model Architecture
 The final model I used in the submission is a [pretrained VGG16 model](https://github.com/fchollet/keras/blob/master/keras/applications/vgg16.py) with the following modifications:
 - I use the bottleneck features up to `block5_conv3`, freezing the training of all layers except the last two, namely `block5_conv2` and `block5_conv3`. 
 - An `AveragePooling2D` layer is used after `block5_conv3`, to further downscale the images. 
@@ -146,28 +146,44 @@ With the model above, I also found the following processing steps useful in gene
 - I was using the standard preprocessing for the pretrained VGG from `Keras`, including subtraction of means in BGR channels.
 - I have experimented with how the pretrained layers of VGG16 should be *fine-tunned*. I found that the bottleneck features without any fine-tunning works well with data of medium size (e.g., before mirroring the images and doubling the size), and bigger dataset provides the luxury of fine-tunning the last two layers `block5_conv2` and `block5_conv3`. Making more layers trainable doesn't gain much more performances given the current dataset.
 
-### Training
+### 3.4 Training
+As discussed above, several mechanisms were implemented to ***avoid overfitting***,
+- Split of dataset into training, validation and test after random shuffling, so that the validation loss can be monitored in the training process. I didn't see many "typical" overfitting in my experiments, i.e., the validation loss starts to increase while training loss keeps decreasing, probably because the size of the dataset is large enough, and the images in different sets are similiar. However, it doesn't mean that the driving model is not "overfit" -  the model can still memorize images and it won't drive very well in scenes that are slightly different from training data. One example is the car self drives to cross a bridge at a slightly different angle, it might fail to come back to the road center. This is because even the training data is large enough overally but some of its rare scenes (e.g., bridge-crossing) might not be representative enough. So the model overfits and fails to generalize the "drivinig knowledge" from scenes to scenes. This type of overfitting is harder to detect by comparing training/loss validation curves.   
+- So besides using a validation set, I have also implemented visual inspection tools (e.g., `inspect_training.py`) to do quick checks, as well as running the model on the real simulation from Udacity. 
+- I used both `dropout` layers and `l2 regularization` to control the model complexity. The values of parameters such as `dropout probability` and `l2 weight` are mostly based on default values and were fine-tuned with validation error.
+- I found that `l2 regularization` tends to work better with the `dense layers` than using a separate `dropout layer`. Sometimes using dropout with dense layers will result in predictions of all zeros. I don't really know the exact reasons behinde this, but I suspect it might be caused by the improper initialization of weights or normalization of images, and so dead neurons by `relu` and a large `dropout` effectively turned off many activations. 
+
 The model was trained on a GPU GTX 980M for 6 epochs within an hour. Both the training and validation loss were still decreasing at the last epoch. However, I chose to stop the training at this stage for two main reasons:
 - The model trained after 6 epochs is already able to self-drive on both tracks in most of my expriements.
 - More training could further improve the "cloning accuracy" of the model of my driving behaviors. However, as mentioned above, this might be another type of "overfitting" for a self-driving model, due to the noise in the training data.
 
-## TODO
+I used Adam optimizer with a learning rate = 0.001. The performance is not very sensitive to the exact value of learning rate in my experiments.
 
-image processing
-avoid overfitting - how to tell, curve, rare scenes.
-Parameter tuning
-training curve
+### 3.5 Driving in Simulators
+To test the model under the autonomous mode in the simulator, I was using the `drive.py` script provided by Udacity with some modifications. The script has the access to all the camera images and signals, and the control of `steering angle` and `throttle`. You can even choose to cache the inputs from previous timestamps and build a recurrent model like the one by comma.ai research.
 
-### Driving in Simulators
-constant speed
+I only use the current `center image` to predict the current `steering angle` in my experiments. The `throttle` was set to a fixed value 0.5 for both tracks. 
 
-## 4. Test Results
-### Videos
-### Visualization
+## 4. Results
+Here are some videos for running my SDC model in the simulator.
+### First finish of track 1
+[![First finish of track 1](https://img.youtube.com/vi/_VyUSNcQ0UE/0.jpg)](https://www.youtube.com/watch?v=_VyUSNcQ0UE)
 
+### First finish of both tracks
+[![First finish of both tracks](https://img.youtube.com/vi/CU5zCB63rvY/0.jpg)](https://www.youtube.com/watch?v=CU5zCB63rvY)
 
+### Model visualization
+I am also interested in understanding how the trained model actually works. One way is to visualize the regions of images that trigger high activations in certain convolution layers, e.g., `block5_conv3`. For example, [this paper](https://arxiv.org/abs/1505.04366) discusses how to use `deconvolution` layers to reverse-map a single classification output to the original image space, and thus get a semantic segmentation. 
 
+I am not using `deconvolution` layers but instead a cheaper `image resize` operation to approximate the effect. It is similar to `unpolling` but much cheaper to implement. This is only possible because the layer I choose still has enough details to restore in the original image space. The following shows what a SDC model "sees" at left/right turnings. Intuitively the brighter the regions, the more important they are to the model decision. 
 
+### What a SDC model sees at left turning
+![SDCSeesLeftTurn](SDCSeesLeftTurn.png)
 
+## What a SDC model sees at right turning 
+![SDCSeesRightTurn](SDCSeesRightTurn.png)
 
+For a verbose explaination, please refer to the notebook [understand_model.ipynb](understand_model.ipynb)
+
+<br><br>
 *The conversion of this Markdown to HTML is supported by [grip](https://pypi.python.org/pypi/grip), running* `grip README.md --export README.html`
