@@ -47,7 +47,7 @@ class DataSet(object):
 
     def smooth(self, window):
         """
-        smooth steering by rolling mean, so that similiar images (next to each in time)
+        smooth steering by rolling mean, so that similar images (next to each in time)
         won't have steer values that are too different
         """
         self.log.SteeringAngle = pd.rolling_mean(self.log.SteeringAngle, window=window, center=True)
